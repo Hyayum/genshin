@@ -116,7 +116,7 @@ export default function Atfscore() {
 
   return (
     <>
-      <Grid container spacing={1} sx={{ m: 5, minWidth: 1000 }}>
+      <Grid container spacing={1} sx={{ m: 5, width: 1000 }}>
         <Grid size={12}>
           <Typography variant="h4" sx={{ mb: 2 }}>
             カスタム聖遺物スコア計算機
