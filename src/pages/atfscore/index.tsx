@@ -78,7 +78,7 @@ export default function Atfscore() {
   const [multiples, setMultiples] = useState<{ [key: string]: Multiple }>(subOptions.reduce((obj, opt) => ({
     ...obj,
     [opt.label]: {
-      use: ["会心率", "会心ダメージ", "攻撃力"].includes(opt.label),
+      use: ["会心率", "会心ダメージ", "攻撃力%"].includes(opt.label),
       value: opt.label.includes("会心") ? (1 / opt.rate) : (0.75 / opt.rate),
     },
   }), {}));
