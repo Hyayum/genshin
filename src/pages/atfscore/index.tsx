@@ -17,6 +17,7 @@ import { useState, useRef } from "react";
 import NumberField from "@/components/NumberField";
 import { characterData, statusNames } from "@/enka/data";
 import { Enka } from "@/enka/types";
+import { apiUrl } from "@/enka/settings";
 
 interface Option {
   label: string;
@@ -131,9 +132,9 @@ export default function Atfscore() {
     if (!uid) { return; }
     setFetching(true);
     try {
-      const response = await fetch(`https://enka.network/api/uid/${uid}`);
+      const response = await fetch(`${apiUrl}?uid=${uid}`);
       const jsonData: Enka = await response.json();
-      console.log(jsonData);
+      //console.log(jsonData);
       const characterIds = jsonData.avatarInfoList?.map((c) => String(c.avatarId));
       if (characterIds) {
         setCharacters(characterIds);
@@ -161,9 +162,15 @@ export default function Atfscore() {
   };
 
   const onClickCharacter = (id: string) => {
-    console.log(characterDetails.current)
+    //console.log(characterDetails.current)
     if (characterDetails.current[id]) {
-      setArtifacts(characterDetails.current[id]);
+      const fullData = Array(calcs).fill(0).map((z, i) => 
+        characterDetails.current[id][i] || {
+          main: artifacts[i].main,
+          sub: defaultSubStatus,
+        }
+      );
+      setArtifacts(fullData);
     }
   };
 
@@ -205,9 +212,6 @@ export default function Atfscore() {
           })}
         </Grid>
         <Grid size={12}>
-          <Typography variant="subtitle1">
-            ※Github Pagesで動くかテスト中
-          </Typography>
           <Box sx={{ display: "flex" }}>
             <Box sx={{ width: 120 }}>
               <TextField
