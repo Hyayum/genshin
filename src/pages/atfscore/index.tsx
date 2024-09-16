@@ -131,7 +131,7 @@ export default function Atfscore() {
     if (!uid) { return; }
     setFetching(true);
     try {
-      const response = await fetch(`/api/enka/uid/${uid}`);
+      const response = await fetch(`https://enka.network/api/uid/${uid}`);
       const jsonData: Enka = await response.json();
       console.log(jsonData);
       const characterIds = jsonData.avatarInfoList?.map((c) => String(c.avatarId));
@@ -240,7 +240,10 @@ export default function Atfscore() {
                   }}
                   onClick={() => onClickCharacter(c)}
                 >
-                  <img src={`https://enka.network/ui/UI_AvatarIcon_${characterData[c].name}.png`} />
+                  <img
+                    src={`https://enka.network/ui/UI_AvatarIcon_${characterData[c].name}.png`}
+                    alt={characterData[c].name}
+                  />
                 </ImageListItem>
               ))}
             </ImageList>
