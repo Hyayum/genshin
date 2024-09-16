@@ -1,8 +1,12 @@
 import {
+  Backdrop,
   Box,
   Button,
+  CircularProgress,
   Checkbox,
   Grid2 as Grid,
+  ImageList,
+  ImageListItem,
   MenuItem,
   Paper,
   Popover,
@@ -11,6 +15,8 @@ import {
 } from "@mui/material";
 import { useState, useRef } from "react";
 import NumberField from "@/components/NumberField";
+import { characterData, statusNames } from "@/enka/data";
+import { Enka } from "@/enka/types";
 
 interface Option {
   label: string;
@@ -38,6 +44,8 @@ interface Artifact {
   main: string;
   sub: SubStatus[];
 };
+
+interface CharacterDetails { [k: string]: Artifact[] };
 
 const options: Option[] = [
   { label: "会心率", main: true, sub: true, rate: 0.5 },
@@ -75,6 +83,11 @@ const defaultSubStatus = [
 ];
 
 export default function Atfscore() {
+  const [fetching, setFetching] = useState(false);
+  const [uid, setUid] = useState("");
+  const [characters, setCharacters] = useState<string[]>([]);
+  const characterDetails = useRef<CharacterDetails>({});
+  
   const [multiples, setMultiples] = useState<{ [key: string]: Multiple }>(subOptions.reduce((obj, opt) => ({
     ...obj,
     [opt.label]: {
@@ -114,9 +127,49 @@ export default function Atfscore() {
   const totalScore = scores.reduce((sum, s) => sum + s.score, 0);
   const totalMaxScore = scores.reduce((sum, s) => sum + s.maxScore, 0);
 
+  const fetchEnka = async () => {
+    if (!uid) { return; }
+    setFetching(true);
+    try {
+      const response = await fetch(`/api/enka/uid/${uid}`);
+      const jsonData: Enka = await response.json();
+      console.log(jsonData);
+      const characterIds = jsonData.avatarInfoList?.map((c) => String(c.avatarId));
+      if (characterIds) {
+        setCharacters(characterIds);
+        const details: CharacterDetails = jsonData.avatarInfoList.reduce((obj, c) => {
+          const equips: (Artifact | null)[] = c.equipList.map((eq) => {
+            if (!(eq.reliquary && eq.flat.reliquaryMainstat && eq.flat.reliquarySubstats)) {
+              return null;
+            }
+            const mainStat = statusNames[eq.flat.reliquaryMainstat.mainPropId];
+            const subStat = eq.flat.reliquarySubstats.map((stat) => ({
+              status: statusNames[stat.appendPropId],
+              value: stat.statValue,
+            }));
+            return { main: mainStat, sub: subStat };
+          });
+          if (!equips) { return obj; }
+          return { ...obj, [String(c.avatarId)]: equips.filter((eq) => eq !== null) };
+        }, {});
+        characterDetails.current = details;
+      }
+    } catch (e) {
+      console.log(e);
+    }
+    setFetching(false);
+  };
+
+  const onClickCharacter = (id: string) => {
+    console.log(characterDetails.current)
+    if (characterDetails.current[id]) {
+      setArtifacts(characterDetails.current[id]);
+    }
+  };
+
   return (
     <>
-      <Grid container spacing={1} sx={{ m: 5, width: 1000 }}>
+      <Grid container spacing={5} sx={{ m: 5, width: 1000 }}>
         <Grid size={12}>
           <Typography variant="h4" sx={{ mb: 2 }}>
             カスタム聖遺物スコア計算機
@@ -124,14 +177,13 @@ export default function Atfscore() {
           <Typography variant="subtitle2">
             各ステータスの比重を設定してスコアを計算できます
           </Typography>
-        </Grid>
-
-        <Grid size={12}>
-          <Typography variant="h5" sx={{ my: 2 }}>
-            係数の設定 (スコア = 数値 × 係数)
-          </Typography>
-        </Grid>
+        </Grid>  
         <Grid container spacing={1} sx={{ width: 600, mb: 3 }}>
+          <Grid size={12}>
+            <Typography variant="h5" sx={{ my: 2 }}>
+              係数の設定 (スコア = 数値 × 係数)
+            </Typography>
+          </Grid>
           {subOptions.map((opt) => {
             const setValue = (m: Multiple) => setMultiples({
               ...multiples,
@@ -152,6 +204,48 @@ export default function Atfscore() {
             );
           })}
         </Grid>
+        <Grid size={12}>
+          <Typography variant="subtitle1">
+            ※Github Pagesで動くかテスト中
+          </Typography>
+          <Box sx={{ display: "flex" }}>
+            <Box sx={{ width: 120 }}>
+              <TextField
+                label="UID"
+                size="small"
+                value={uid}
+                onChange={(e) => setUid(e.target.value)}
+              />
+            </Box>
+            <Button
+              color="success"
+              size="small"
+              variant="contained"
+              onClick={fetchEnka}
+            >
+              キャラ情報取得
+            </Button>
+          </Box>
+          {characters.length > 0 && (
+            <ImageList cols={6} sx={{ mt: 1, width: 400 }}>
+              {characters.map((c) => (
+                <ImageListItem
+                  key={c}
+                  sx={{
+                    width: 60,
+                    height: 60,
+                    borderRadius: 1,
+                    bgcolor: characterData[c].rarity == 5 ? "#c95" : "#87b",
+                    cursor: "pointer",
+                  }}
+                  onClick={() => onClickCharacter(c)}
+                >
+                  <img src={`https://enka.network/ui/UI_AvatarIcon_${characterData[c].name}.png`} />
+                </ImageListItem>
+              ))}
+            </ImageList>
+          )}
+        </Grid>
         <Grid container spacing={5} sx={{ width: 1000, mb: 4 }}>
           {Array(calcs).fill(0).map((z, i) => (
             <Grid size={6} key={i}>
@@ -170,6 +264,9 @@ export default function Atfscore() {
           </Typography>
         </Grid>
       </Grid>
+      <Backdrop open={fetching}>
+        <CircularProgress sx={{ color: "#fff" }} />
+      </Backdrop>
     </>
   );
 };
