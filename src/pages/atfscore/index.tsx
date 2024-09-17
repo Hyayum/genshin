@@ -58,14 +58,14 @@ interface CharacterDetails { [k: string]: CharacterData };
 const options: Option[] = [
   { label: "会心率", main: true, sub: true, rate: 0.5 },
   { label: "会心ダメージ", main: true, sub: true, rate: 1 },
-  { label: "元素熟知", main: true, sub: true, rate: 3 },
-  { label: "元素チャージ効率", main: true, sub: true, rate: 5/6 },
   { label: "攻撃力%", main: true, sub: true, rate: 0.75 },
   { label: "攻撃力+", main: true, sub: true, rate: 2.5 },
   { label: "HP%", main: true, sub: true, rate: 0.75 },
   { label: "HP+", main: true, sub: true, rate: 38.5 },  // ??
   { label: "防御力%", main: true, sub: true, rate: 0.9375 },
   { label: "防御力+", main: false, sub: true, rate: 3 },
+  { label: "元素熟知", main: true, sub: true, rate: 3 },
+  { label: "元素チャージ効率", main: true, sub: true, rate: 5/6 },
   { label: "物理ダメージ", main: true, sub: false, rate: 0.9375 },
   { label: "炎元素ダメージ", main: true, sub: false, rate: 0.75 },
   { label: "水元素ダメージ", main: true, sub: false, rate: 0.75 },
