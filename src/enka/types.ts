@@ -5,6 +5,7 @@ export interface Enka {
 
 export interface AvatarInfo {
   avatarId: number;
+  fightPropMap: { [k: string]: number };
   equipList: Equip[];
 };
 

@@ -46,7 +46,14 @@ interface Artifact {
   sub: SubStatus[];
 };
 
-interface CharacterDetails { [k: string]: Artifact[] };
+interface BaseStatus { [k: string]: number };
+
+interface CharacterData {
+  status: BaseStatus;
+  artifacts: Artifact[];
+};
+
+interface CharacterDetails { [k: string]: CharacterData };
 
 const options: Option[] = [
   { label: "会心率", main: true, sub: true, rate: 0.5 },
@@ -96,6 +103,12 @@ export default function Atfscore() {
       value: opt.label.includes("会心") ? (1 / opt.rate) : (0.75 / opt.rate),
     },
   }), {}));
+
+  const [baseStatus, setBaseStatus] = useState<BaseStatus>({
+    "HP": 0,
+    "攻撃力": 0,
+    "防御力": 0,
+  });
 
   const calcs = 5;
   const [artifacts, setArtifacts] = useState<Artifact[]>(Array(calcs).fill(0).map((z, i) => ({
@@ -150,8 +163,16 @@ export default function Atfscore() {
             }));
             return { main: mainStat, sub: subStat };
           });
-          if (!equips) { return obj; }
-          return { ...obj, [String(c.avatarId)]: equips.filter((eq) => eq !== null) };
+          const charaStatus: BaseStatus = {
+            "HP": c.fightPropMap["1"],
+            "攻撃力": c.fightPropMap["4"],
+            "防御力": c.fightPropMap["7"],
+          };
+          const charaData: CharacterData = {
+            status: charaStatus,
+            artifacts: equips.filter((eq) => eq !== null),
+          };
+          return { ...obj, [String(c.avatarId)]: charaData };
         }, {});
         characterDetails.current = details;
       }
@@ -164,13 +185,14 @@ export default function Atfscore() {
   const onClickCharacter = (id: string) => {
     //console.log(characterDetails.current)
     if (characterDetails.current[id]) {
-      const fullData = Array(calcs).fill(0).map((z, i) => 
-        characterDetails.current[id][i] || {
+      const fullArtifacts = Array(calcs).fill(0).map((z, i) => 
+        characterDetails.current[id].artifacts[i] || {
           main: artifacts[i].main,
           sub: defaultSubStatus,
         }
       );
-      setArtifacts(fullData);
+      setArtifacts(fullArtifacts);
+      setBaseStatus(characterDetails.current[id].status);
     }
   };
 
@@ -206,6 +228,8 @@ export default function Atfscore() {
                     opt.label.includes("+") ?
                     multiples[opt.label.replace("+", "%")].value : null
                   }
+                  baseStatus={baseStatus}
+                  setBaseStatus={setBaseStatus}
                 />
               </Grid>
             );
@@ -283,14 +307,17 @@ const MultipleEditor = ({
   multiple,
   setValue,
   perValue = null,
+  baseStatus,
+  setBaseStatus,
 }: {
   opt: Option;
   multiple: Multiple;
   setValue: (m: Multiple) => void;
   perValue: number | null;
+  baseStatus: BaseStatus;
+  setBaseStatus: (s: BaseStatus) => void;
 }) => {
   const [open, setOpen] = useState(false);
-  const [baseStatus, setBaseStatus] = useState(0);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
   const isPlus = opt.label.includes("+") && perValue !== null;
@@ -304,13 +331,17 @@ const MultipleEditor = ({
   if (isPlus) {
     presets.push({
       label: `基礎${status}を元に${status}%に換算`,
-      value: 100 * perValue / (baseStatus || 1),
+      value: 100 * perValue / (baseStatus[status] || 1),
     });
   }
 
   const onClickPreset = (v: number) => {
     setValue({ ...multiple, value: v });
     setOpen(false);
+  };
+
+  const onChangeBaseStatus = (v: number) => {
+    setBaseStatus({ ...baseStatus, [status]: v });
   };
 
   return (
@@ -379,8 +410,8 @@ const MultipleEditor = ({
                 <NumberField
                   label={`基礎${status}`}
                   size="small"
-                  value={baseStatus}
-                  onChange={(e) => setBaseStatus(Math.max(Number(e.target.value), 0))}
+                  value={Math.round(baseStatus[status])}
+                  onChange={(e) => onChangeBaseStatus(Math.max(Number(e.target.value), 0))}
                   fullWidth
                 />
               </Box>
