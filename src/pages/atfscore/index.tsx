@@ -294,6 +294,33 @@ export default function Atfscore() {
             {`合計：${totalScore.toFixed(1)} / ${totalMaxScore.toFixed(1)} (${(100 * totalScore / (totalMaxScore || 1)).toFixed(1)}%)`}
           </Typography>
         </Grid>
+        <Grid container spacing={1} sx={{ width: 900 }}>
+          {subOptions.map((opt) => {
+            const status = opt.label;
+            const statusSum = artifacts.reduce((sum, a) => (a.sub.find((s) => s.status == status)?.value || 0) + sum, 0);
+            const toFix = opt.rate > 1 ? 0 : 1;
+            const scoreSumStr = multiples[status].use ? ` → ${(statusSum * multiples[status].value).toFixed(1)}` : "";
+            return (
+              <>
+                <Grid size={2.8}>
+                  <Typography variant="h6">
+                    {`${status}`}
+                  </Typography>
+                </Grid>
+                <Grid size={1.1}>
+                  <Typography variant="h6">
+                    {statusSum.toFixed(toFix)}
+                  </Typography>
+                </Grid>
+                <Grid size={2.1}>
+                  <Typography variant="h6" sx={{ color: scoreColor }}>
+                    {scoreSumStr}
+                  </Typography>
+                </Grid>
+              </>
+            );
+          })}
+        </Grid>
       </Grid>
       <Backdrop open={fetching}>
         <CircularProgress sx={{ color: "#fff" }} />
