@@ -1,5 +1,5 @@
 //必要部分のみ
-export interface Enka {
+export interface EnkaData {
   avatarInfoList: AvatarInfo[];
 };
 

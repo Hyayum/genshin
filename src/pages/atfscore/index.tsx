@@ -15,9 +15,7 @@ import {
 } from "@mui/material";
 import { useState, useRef } from "react";
 import NumberField from "@/components/NumberField";
-import { characterData, statusNames } from "@/enka/data";
-import { Enka } from "@/enka/types";
-import { apiUrl } from "@/enka/settings";
+import * as Enka from "@/enka";
 
 interface Option {
   label: string;
@@ -145,8 +143,8 @@ export default function Atfscore() {
     if (!uid) { return; }
     setFetching(true);
     try {
-      const response = await fetch(`${apiUrl}?uid=${uid}`);
-      const jsonData: Enka = await response.json();
+      const response = await fetch(`${Enka.apiUrl}?uid=${uid}`);
+      const jsonData: Enka.EnkaData = await response.json();
       //console.log(jsonData);
       const characterIds = jsonData.avatarInfoList?.map((c) => String(c.avatarId));
       if (characterIds) {
@@ -156,9 +154,9 @@ export default function Atfscore() {
             if (!(eq.reliquary && eq.flat.reliquaryMainstat && eq.flat.reliquarySubstats)) {
               return null;
             }
-            const mainStat = statusNames[eq.flat.reliquaryMainstat.mainPropId];
+            const mainStat = Enka.statusNames[eq.flat.reliquaryMainstat.mainPropId];
             const subStat = eq.flat.reliquarySubstats.map((stat) => ({
-              status: statusNames[stat.appendPropId],
+              status: Enka.statusNames[stat.appendPropId],
               value: stat.statValue,
             }));
             const subStatFull = Array(4).fill(0).map((z, i) => subStat[i] || { status: "防御力+", value: 0 });
@@ -264,14 +262,14 @@ export default function Atfscore() {
                     width: 60,
                     height: 60,
                     borderRadius: 1,
-                    bgcolor: characterData[c].rarity == 5 ? "#c95" : "#87b",
+                    bgcolor: Enka.characterData[c].rarity == 5 ? "#c95" : "#87b",
                     cursor: "pointer",
                   }}
                   onClick={() => onClickCharacter(c)}
                 >
                   <img
-                    src={`https://enka.network/ui/UI_AvatarIcon_${characterData[c].name}.png`}
-                    alt={characterData[c].name}
+                    src={`https://enka.network/ui/UI_AvatarIcon_${Enka.characterData[c].name}.png`}
+                    alt={Enka.characterData[c].name}
                   />
                 </ImageListItem>
               ))}
