@@ -161,7 +161,8 @@ export default function Atfscore() {
               status: statusNames[stat.appendPropId],
               value: stat.statValue,
             }));
-            return { main: mainStat, sub: subStat };
+            const subStatFull = Array(4).fill(0).map((z, i) => subStat[i] || { status: "防御力+", value: 0 });
+            return { main: mainStat, sub: subStatFull };
           });
           const charaStatus: BaseStatus = {
             "HP": c.fightPropMap["1"],
