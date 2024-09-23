@@ -4,6 +4,7 @@ import {
   Button,
   CircularProgress,
   Checkbox,
+  FormControlLabel,
   Grid2 as Grid,
   ImageList,
   ImageListItem,
@@ -27,6 +28,7 @@ interface Option {
 interface Multiple {
   use: boolean;
   value: number;
+  convertPer: boolean;
 };
 
 interface Score {
@@ -99,14 +101,26 @@ export default function Atfscore() {
     [opt.label]: {
       use: ["会心率", "会心ダメージ", "攻撃力%"].includes(opt.label),
       value: opt.label.includes("会心") ? (1 / opt.rate) : (0.75 / opt.rate),
+      convertPer: opt.label.includes("+"),
     },
   }), {}));
 
   const [baseStatus, setBaseStatus] = useState<BaseStatus>({
-    "HP": 0,
-    "攻撃力": 0,
-    "防御力": 0,
+    "HP": 14000,
+    "攻撃力": 800,
+    "防御力": 800,
   });
+  
+  const getMultiple = (stat: string) => {
+    const multiple = multiples[stat];
+    if (!multiple || !multiple.use) { return 0; }
+    if (multiple.convertPer && stat.includes("+")) {
+      const perValue = multiples[stat.replace("+", "%")].value;
+      return 100 * (perValue || 0) / (baseStatus[stat.split("+")[0]] || 1);
+    } else {
+      return multiple.value;
+    }
+  };
 
   const calcs = 5;
   const [artifacts, setArtifacts] = useState<Artifact[]>(Array(calcs).fill(0).map((z, i) => ({
@@ -123,11 +137,11 @@ export default function Atfscore() {
   const calcScore = (artifact: Artifact) => {
     const score = artifact.sub.reduce((sum, sub) => {
       const { status, value } = sub;
-      return (multiples[status].use ? value * multiples[status].value : 0) + sum;
+      return value * getMultiple(status) + sum;
     }, 0);
     const optionWeights = subOptions
       .filter((opt) => multiples[opt.label].use && opt.label != artifact.main)
-      .map((opt) => opt.rate * multiples[opt.label].value)
+      .map((opt) => opt.rate * getMultiple(opt.label))
       .sort((a, b) => b - a);
     const maxScore = 7.78 * Array(4).fill(0).reduce((sum, z, i) => (
       sum + (optionWeights[i] || 0) * (i == 0 ? 6 : 1)
@@ -206,19 +220,19 @@ export default function Atfscore() {
             各ステータスの比重を設定してスコアを計算できます
           </Typography>
         </Grid>  
-        <Grid container spacing={1} sx={{ width: 600, mb: 3 }}>
+        <Grid container spacing={1} sx={{ width: 900, mb: 3 }}>
           <Grid size={12}>
             <Typography variant="h5" sx={{ my: 2 }}>
               係数の設定 (スコア = 数値 × 係数)
             </Typography>
           </Grid>
-          {subOptions.map((opt) => {
+          {subOptions.map((opt, i) => {
             const setValue = (m: Multiple) => setMultiples({
               ...multiples,
               [opt.label]: m,
             });
             return (
-              <Grid size={6} key={opt.label}>
+              <Grid size={i % 2 == 0 ? 4 : 8} key={opt.label}>
                 <MultipleEditor
                   opt={opt}
                   multiple={multiples[opt.label]}
@@ -281,7 +295,7 @@ export default function Atfscore() {
             <Grid size={6} key={i}>
               <ArtifactEditor
                 artifact={artifacts[i]}
-                multiples={multiples}
+                getMultiple={getMultiple}
                 setArtifact={(a: Artifact) => onChangeArtifact(i, a)}
                 score={scores[i]}
               />
@@ -298,7 +312,7 @@ export default function Atfscore() {
             const status = opt.label;
             const statusSum = artifacts.reduce((sum, a) => (a.sub.find((s) => s.status == status)?.value || 0) + sum, 0);
             const toFix = opt.rate > 1 ? 0 : 1;
-            const scoreSumStr = multiples[status].use ? ` → ${(statusSum * multiples[status].value).toFixed(1)}` : "";
+            const scoreSumStr = multiples[status].use ? ` → ${(statusSum * getMultiple(status)).toFixed(1)}` : "";
             return (
               <>
                 <Grid size={2.8}>
@@ -354,12 +368,6 @@ const MultipleEditor = ({
     { label: "伸び(会心ダメージ換算)", value: 1 / opt.rate },
     { label: "伸び(攻撃力%換算)", value: 0.75 / opt.rate },
   ];
-  if (isPlus) {
-    presets.push({
-      label: `基礎${status}を元に${status}%に換算`,
-      value: 100 * perValue / (baseStatus[status] || 1),
-    });
-  }
 
   const onClickPreset = (v: number) => {
     setValue({ ...multiple, value: v });
@@ -374,35 +382,70 @@ const MultipleEditor = ({
     <>
       <Box sx={{ display: "flex" }}>
         <Checkbox
-        size="small"
+          size="small"
           checked={multiple.use}
           onClick={() => setValue({
+            ...multiple,
             use: !multiple.use,
-            value: multiple.value,
           })}
         />
         <Box sx={{ width: 150 }}>
           <NumberField
             label={opt.label}
             size="small"
-            value={Math.round(10000 * multiple.value) / 10000}
+            value={
+              multiple.convertPer ?
+              Math.round(10000 * 100 * (perValue || 0) / (baseStatus[status] || 1)) / 10000 :
+              Math.round(10000 * multiple.value) / 10000
+            }
             onChange={(e) => setValue({
-              use: multiple.use,
+              ...multiple,
               value: Math.max(Number(e.target.value), 0),
             })}
             fullWidth
+            disabled={multiple.convertPer}
           />
         </Box>
-        <Button
-          color="primary"
-          variant="text"
-          size="small"
-          onClick={() => setOpen(true)}
-          ref={buttonRef}
-          sx={{ mx: 1 }}
-        >
-          プリセット
-        </Button>
+        {isPlus && (
+          <>
+            <FormControlLabel
+              label="%に換算"
+              control={
+                <Checkbox
+                  size="small"
+                  color="success"
+                  checked={multiple.convertPer}
+                  onClick={() => setValue({
+                    ...multiple,
+                    convertPer: !multiple.convertPer,
+                  })}
+                />
+              }
+              sx={{ ml: 1 }}
+            />
+            <Box sx={{ width: 100 }}>
+              <NumberField
+                label={`基礎${status}`}
+                size="small"
+                value={Math.round(baseStatus[status])}
+                onChange={(e) => onChangeBaseStatus(Math.max(Number(e.target.value), 0))}
+                fullWidth
+              />
+            </Box>
+          </>
+        )}
+        {!multiple.convertPer && (
+          <Button
+            color="primary"
+            variant="text"
+            size="small"
+            onClick={() => setOpen(true)}
+            ref={buttonRef}
+            sx={{ mx: 1 }}
+          >
+            プリセット
+          </Button>
+        )}   
       </Box>
       <Popover
         open={open}
@@ -431,17 +474,6 @@ const MultipleEditor = ({
                 {pre.label}
               </Button>
             ))}
-            {isPlus && (
-              <Box sx={{ width: 100 }}>
-                <NumberField
-                  label={`基礎${status}`}
-                  size="small"
-                  value={Math.round(baseStatus[status])}
-                  onChange={(e) => onChangeBaseStatus(Math.max(Number(e.target.value), 0))}
-                  fullWidth
-                />
-              </Box>
-            )}
           </Box>
         </Paper>
       </Popover>
@@ -451,12 +483,12 @@ const MultipleEditor = ({
 
 const ArtifactEditor = ({
   artifact,
-  multiples,
+  getMultiple,
   setArtifact,
   score: scores,
 }: {
   artifact: Artifact;
-  multiples: { [k: string]: Multiple };
+  getMultiple: (stat: string) => number;
   setArtifact: (a: Artifact) => void;
   score: Score;
 }) => {
@@ -518,7 +550,7 @@ const ArtifactEditor = ({
               />
             </Box>
             <Typography variant="h6" sx={{ mx: 2, color: scoreColor }}>
-              {(multiples[status].use ? value * multiples[status].value : 0).toFixed(1)}
+              {(value * getMultiple(status)).toFixed(1)}
             </Typography>
           </Box>
         );
