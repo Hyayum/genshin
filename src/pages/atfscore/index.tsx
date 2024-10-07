@@ -269,24 +269,27 @@ export default function Atfscore() {
           </Box>
           {characters.length > 0 && (
             <ImageList cols={6} sx={{ mt: 1, width: 400 }}>
-              {characters.map((c) => (
-                <ImageListItem
-                  key={c}
-                  sx={{
-                    width: 60,
-                    height: 60,
-                    borderRadius: 1,
-                    bgcolor: Enka.characterData[c].rarity == 5 ? "#c95" : "#87b",
-                    cursor: "pointer",
-                  }}
-                  onClick={() => onClickCharacter(c)}
-                >
-                  <img
-                    src={`https://enka.network/ui/UI_AvatarIcon_${Enka.characterData[c].name}.png`}
-                    alt={Enka.characterData[c].name}
-                  />
-                </ImageListItem>
-              ))}
+              {characters.map((c) => {
+                const chara = Enka.characterData[c] || { name: "", rarity: 0 };
+                return (
+                  <ImageListItem
+                    key={c}
+                    sx={{
+                      width: 60,
+                      height: 60,
+                      borderRadius: 1,
+                      bgcolor: chara.rarity == 5 ? "#c95" : "#87b",
+                      cursor: "pointer",
+                    }}
+                    onClick={() => onClickCharacter(c)}
+                  >
+                    <img
+                      src={chara.name ? `https://enka.network/ui/UI_AvatarIcon_${chara.name}.png` : ""}
+                      alt={chara.name || c}
+                    />
+                  </ImageListItem>
+                );
+              })}
             </ImageList>
           )}
         </Grid>
