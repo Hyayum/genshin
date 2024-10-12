@@ -10,11 +10,13 @@ rarity5 = ["PlayerBoy", "PlayerGirl", "Qin", "Diluc", "Mona", "Qiqi", "Keqing", 
            "Liney", "Wriothesley", "Neuvillette", "Furina", "Navia", "Liuyun", "Chiori", "Arlecchino", "Sigewinne", "Clorinde", "Emilie",
            "Kinich", "Mualani", "Xilonen"]
 
+notPlayable = ["Mavuika"]
+
 res = requests.get("https://raw.githubusercontent.com/EnkaNetwork/API-docs/master/store/characters.json")
 data = json.loads(res.text)
 for k, v in data.items():
     name = v["SideIconName"].split("UI_AvatarIcon_Side_")[1]
     print(f"  \"{k}\": {'{'}")
     print(f"    name: \"{name}\",")
-    print(f"    rarity: {5 if name in rarity5 else 4},")
+    print(f"    rarity: {5 if name in rarity5 else 0 if name in notPlayable else 4},")
     print(f"  {'}'},")

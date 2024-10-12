@@ -278,7 +278,7 @@ export default function Atfscore() {
                       width: 60,
                       height: 60,
                       borderRadius: 1,
-                      bgcolor: chara.rarity == 5 ? "#c95" : "#87b",
+                      bgcolor: chara.rarity == 5 ? "#c95" : chara.rarity == 4 ? "#87b" : "#bbb",
                       cursor: "pointer",
                     }}
                     onClick={() => onClickCharacter(c)}

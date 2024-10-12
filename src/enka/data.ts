@@ -360,6 +360,18 @@ export const characterData: { [k: string]: Character } = {
     name: "Mualani",
     rarity: 5,
   },
+  "10000103": {
+    name: "Xilonen",
+    rarity: 5,
+  },
+  "10000901": {
+    name: "Mavuika",
+    rarity: 0,
+  },
+  "11000046": {
+    name: "Qin",
+    rarity: 5,
+  },
   "10000005-503": {
     name: "PlayerBoy",
     rarity: 5,
