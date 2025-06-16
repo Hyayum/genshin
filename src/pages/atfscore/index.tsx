@@ -14,7 +14,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import NumberField from "@/components/NumberField";
 import * as Enka from "@/enka";
 
@@ -95,6 +95,7 @@ export default function Atfscore() {
   const [uid, setUid] = useState("");
   const [characters, setCharacters] = useState<string[]>([]);
   const characterDetails = useRef<CharacterDetails>({});
+  const characterList = useRef<Enka.CharacterList>({});
   
   const [multiples, setMultiples] = useState<{ [key: string]: Multiple }>(subOptions.reduce((obj, opt) => ({
     ...obj,
@@ -162,8 +163,7 @@ export default function Atfscore() {
       //console.log(jsonData);
       const characterIds = jsonData.avatarInfoList?.map((c) => String(c.avatarId));
       if (characterIds) {
-        setCharacters(characterIds);
-        const details: CharacterDetails = jsonData.avatarInfoList.reduce((obj, c) => {
+        const details: CharacterDetails = jsonData.avatarInfoList.filter((c) => c.equipList && c.fightPropMap).reduce((obj, c) => {
           const equips: (Artifact | null)[] = c.equipList.map((eq) => {
             if (!(eq.reliquary && eq.flat.reliquaryMainstat && eq.flat.reliquarySubstats)) {
               return null;
@@ -187,6 +187,7 @@ export default function Atfscore() {
           };
           return { ...obj, [String(c.avatarId)]: charaData };
         }, {});
+        setCharacters(characterIds);
         characterDetails.current = details;
       }
     } catch (e) {
@@ -194,6 +195,15 @@ export default function Atfscore() {
     }
     setFetching(false);
   };
+
+  const fetchCharacterList = async () => {
+    const charaList = await Enka.getCharacterList();
+    characterList.current = charaList;
+  };
+
+  useEffect(() => {
+    fetchCharacterList();
+  }, [])
 
   const onClickCharacter = (id: string) => {
     //console.log(characterDetails.current)
@@ -270,7 +280,7 @@ export default function Atfscore() {
           {characters.length > 0 && (
             <ImageList cols={6} sx={{ mt: 1, width: 400 }}>
               {characters.map((c) => {
-                const chara = Enka.characterData[c] || { name: "", rarity: 0 };
+                const chara = characterList.current[c] || { iconUrl: "", bgcolor: "#bbb" };
                 return (
                   <ImageListItem
                     key={c}
@@ -278,14 +288,14 @@ export default function Atfscore() {
                       width: 60,
                       height: 60,
                       borderRadius: 1,
-                      bgcolor: chara.rarity == 5 ? "#c95" : chara.rarity == 4 ? "#87b" : "#bbb",
+                      bgcolor: chara.bgcolor,
                       cursor: "pointer",
                     }}
                     onClick={() => onClickCharacter(c)}
                   >
                     <img
-                      src={chara.name ? `https://enka.network/ui/UI_AvatarIcon_${chara.name}.png` : ""}
-                      alt={chara.name || c}
+                      src={chara.iconUrl}
+                      alt={chara.iconUrl}
                     />
                   </ImageListItem>
                 );
