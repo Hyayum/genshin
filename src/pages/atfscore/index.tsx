@@ -295,7 +295,7 @@ export default function Atfscore() {
                   >
                     <img
                       src={chara.iconUrl}
-                      alt={chara.iconUrl}
+                      alt={chara.nameJP}
                     />
                   </ImageListItem>
                 );

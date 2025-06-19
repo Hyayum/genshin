@@ -7,7 +7,7 @@ export default function App({ Component, pageProps }: AppProps) {
   return (
     <>
       <Head>
-        <title>原神用計算機</title>
+        <title>原神用ツール</title>
       </Head>
       <Component {...pageProps} />
     </>

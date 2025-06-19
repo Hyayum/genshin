@@ -1,27 +1,53 @@
+import { charaListUrl, jpNameMapUrl } from "@/enka/settings";
+
+export type Element = "Fire" | "Water" | "Wind" | "Electric" | "Grass" | "Ice" | "Rock" | "None";
+
 interface EnkaCharacterData {
   SideIconName: string;
   QualityType: "QUALITY_ORANGE" | "QUALITY_PURPLE" | "QUALITY_ORANGE_SP";
+  Element: Element;
 };
 
 export interface CharacterData {
+  id: string;
   iconUrl: string;
   bgcolor: string;
+  nameEnka: string;
+  nameJP: string;
+  element: Element;
+  rarity: number;
 };
 
 export interface CharacterList {
   [id: string]: CharacterData
 };
 
+export const RarityColor = {
+  QUALITY_ORANGE: "#a63",
+  QUALITY_PURPLE: "#76a",
+  QUALITY_ORANGE_SP: "#a55",
+};
+
 export const getCharacterList = async () => {
-  const res = await fetch("https://raw.githubusercontent.com/EnkaNetwork/API-docs/master/store/characters.json");
-  const resJson: Record<string, EnkaCharacterData> = await res.json();
-  const charaData = Object.entries(resJson).reduce((acc, [id, data]) => ({
-    ...acc,
-    [id]: {
-      iconUrl: `https://enka.network/ui/${data.SideIconName.replace("_Side_", "_")}.png`,
-      bgcolor: data.QualityType == "QUALITY_ORANGE" ? "#c95" : data.QualityType == "QUALITY_PURPLE" ? "#87b" : "#a55",
-    },
-  }), {} as Record<string, CharacterData>);
+  const [charaList, jpNameMap] = await Promise.all([
+    fetch(charaListUrl).then(res => res.json() as Promise<Record<string, EnkaCharacterData>>),
+    fetch(jpNameMapUrl).then(res => res.json() as Promise<Record<string, string>>),
+  ]);
+  const charaData = Object.entries(charaList).reduce((acc, [id, data]) => {
+    const nameEnka = data.SideIconName.match(/^UI_AvatarIcon_Side_(.+)$/)?.[1] || "";
+    return {
+      ...acc,
+      [id]: {
+        id: id,
+        iconUrl: `https://enka.network/ui/UI_AvatarIcon_${nameEnka}.png`,
+        bgcolor: RarityColor[data.QualityType],
+        nameEnka: nameEnka,
+        nameJP: jpNameMap[nameEnka] || nameEnka,
+        element: data.Element,
+        rarity: data.QualityType == "QUALITY_PURPLE" ? 4 : 5,
+      },
+    }
+  }, {} as Record<string, CharacterData>);
   return charaData;
 };
 

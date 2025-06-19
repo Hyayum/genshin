@@ -9,6 +9,7 @@ export default function Home() {
   const links = [
     { "url": "expectation", label: "期待値計算機" },
     { "url": "atfscore", label: "カスタム聖遺物スコア計算機" },
+    { "url": "roulette", label: "全キャラルーレット螺旋（ジェネリック）" },
   ];
 
   return (
