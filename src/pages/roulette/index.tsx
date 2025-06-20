@@ -420,7 +420,7 @@ const CharaIcon = ({
   return (
     <div
       ref={ref}
-      style={{ position: "relative", width: charaIconSize, height: charaIconSize, cursor: "pointer", userSelect: "none", touchAction: "none", ...style }}
+      style={{ position: "relative", width: charaIconSize, height: charaIconSize, cursor: "pointer", userSelect: "none", ...style }}
       onClick={onClick}
       onMouseDown={onMouseDown}
       onTouchStart={onTouchStart}
