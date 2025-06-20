@@ -28,11 +28,12 @@ const charaIconSize = 90;
 const elementUrl = (elm: string) => (elm == "None" ? "" : `${PUBLIC_BASE_PATH}/${elm}.png`);
 
 export default function Roulette() {
+  const [allCharaList, setAllCharaList] = useState<Enka.CharacterData[]>([]);
   const [charaList, setCharaList] = useState<Enka.CharacterData[]>([]);
   const [isPending, startTransition] = useTransition();
   const [parties, setParties] = useState<Party[]>([{ charaIds: [], stg1: 0, stg2: 0, stg3: 0 }]);
   const [leftCharaIds, setLeftCharaIds] = useState<string[]>([]);
-  const [mode, setMode] = useState<"Roulette" | "List">("Roulette");
+  const [mode, setMode] = useState<"Roulette" | "List" | "CharaSelect">("CharaSelect");
   const [isChoosing, setIsChoosing] = useState(false);
   const [chosenCharaId, setChosenCharaId] = useState<string | null>(null);
   const [movingChara, setMovingChara] = useState<MovingChara | null>(null);
@@ -44,7 +45,8 @@ export default function Roulette() {
   const rouletteEndSound = new Howl({ src: [`${PUBLIC_BASE_PATH}/roulette_end.mp3`]} );
 
   const isLastParty = parties[parties.length - 1].charaIds.length % 8 + leftCharaIds.length <= 8;
-  const rouletteFinished = parties[parties.length - 1].charaIds.length >= 8 && parties.length * 8 >= charaList.length;
+  const rouletteFinished = (parties[parties.length - 1].charaIds.length >= 8 && parties.length * 8 >= charaList.length) ||
+    (charaList.length < 8 && parties[parties.length - 1].charaIds.length >= charaList.length);
 
   const getCharaList = async () => {
     const travelerId = "10000005-501";
@@ -53,8 +55,14 @@ export default function Roulette() {
       ((!Number.isNaN(Number(c.id)) && Number(c.id) < 10000900) || c.id == travelerId) &&
       c.id != "10000005" && c.id != "10000007"
     )).map((c) => c.id == travelerId ? { ...c, iconUrl: `${PUBLIC_BASE_PATH}/traveler.png` } : c);
-    setCharaList(shuffle(charasForRoulette));
-    setLeftCharaIds(charasForRoulette.map(c => c.id));
+    setAllCharaList(charasForRoulette.sort((a, b) => a.id.localeCompare(b.id)));
+    setCharaList(charasForRoulette);
+  };
+
+  const fixCharaList = () => {
+    setCharaList((prev) => shuffle(prev));
+    setLeftCharaIds(charaList.map(c => c.id));
+    setMode("Roulette");
   };
 
   useEffect(() => {
@@ -240,66 +248,68 @@ export default function Roulette() {
       style={{ backgroundColor: "#111", color: "#fff", padding: 40, width: "100%", minWidth: 1000, height: "100%", minHeight: "100vh" }}
     >
       <div style={{ fontSize: 30, textAlign: "center", marginBottom: 40 }}>
-        全キャラルーレット螺旋（ジェネリック）
+        ルーレット螺旋（ジェネリック）
       </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 20, marginBottom: 40 }}>
-        {parties.map((p, i) => mode == "Roulette" && i != parties.length - 1 ? (
-          <></>
-        ) : (
-          <div style={{ display: "flex", gap: 5, alignItems: "center" }} key={`party_${i}`}>
-            <div style={{ fontSize: 40, width: 70, textAlign: "center" }}>{ i + 1 }</div>
-            {Array(8).fill(0).map((_, j) => {
-              const charaId = p.charaIds[j];
-              const chara = charaList.find(c => c.id == charaId);
-              const isMoving = !!(chara && movingChara?.charaId == charaId && i == movingChara?.partyIdx);
-              return (
-                <motion.div
-                  key={`chara_${i}_${charaId || j}_${mode}`}
-                  layout
-                  transition={{ type: "tween", duration: 0.15, ease: "easeInOut" }}
-                >
-                  <CharaIcon
-                    ref={(el) => { if (i == 0) { firstPartyIconRefs.current[j] = el; } }}
-                    iconUrl={chara?.iconUrl || ""}
-                    element={chara?.element || "None"}
-                    bgcolor={chara?.bgcolor || "#222"}
-                    name={chara?.nameJP || ""}
-                    onMouseDown={(e: React.MouseEvent<HTMLDivElement>) => mouseStartMoveCharacter(e, i, charaId)}
-                    onTouchStart={(e: React.TouchEvent<HTMLDivElement>) => touchStartMoveCharacter(e, i, charaId)}
-                    style={{
-                      opacity: isMoving ? 0.3 : p.stg1 + p.stg2 + p.stg3 >= 9 ? 0.5 : 1,
-                      marginLeft: mode == "List" && j == 4 ? 20 : 0,
-                      zIndex: isMoving ? 0 : 1,
-                      cursor: mode == "List" ? "pointer" : "default",
-                    }}
-                  />
-                </motion.div>
-              );
-            })}
-            {mode == "List" && (
-              <div style={{ display: "flex", flexDirection: "column", gap: 5, marginLeft: 10 }}>
-                <Stars count={p.stg1} setCount={(n: number) => setParty({ ...p, stg1: n }, i)} />
-                <Stars count={p.stg2} setCount={(n: number) => setParty({ ...p, stg2: n }, i)} />
-                <Stars count={p.stg3} setCount={(n: number) => setParty({ ...p, stg3: n }, i)} />
-              </div>
-            )}
-            {movingChara && movingCharaData && (
-              <CharaIcon
-                iconUrl={movingCharaData.iconUrl}
-                element={movingCharaData.element}
-                bgcolor={movingCharaData.bgcolor}
-                name={movingCharaData.nameJP}
-                style={{
-                  position: "absolute",
-                  top: movingChara.mouseY - movingChara.topMouseDiff,
-                  left: movingChara.mouseX - movingChara.leftMouseDiff,
-                  zIndex: 2,
-                }}
-              />
-            )}
-          </div>
-        ))}
-      </div>
+      {mode != "CharaSelect" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 20, marginBottom: 40 }}>
+          {parties.map((p, i) => mode == "Roulette" && i != parties.length - 1 ? (
+            <></>
+          ) : (
+            <div style={{ display: "flex", gap: 5, alignItems: "center" }} key={`party_${i}`}>
+              <div style={{ fontSize: 40, width: 70, textAlign: "center" }}>{ i + 1 }</div>
+              {Array(8).fill(0).map((_, j) => {
+                const charaId = p.charaIds[j];
+                const chara = charaList.find(c => c.id == charaId);
+                const isMoving = !!(chara && movingChara?.charaId == charaId && i == movingChara?.partyIdx);
+                return (
+                  <motion.div
+                    key={`chara_${i}_${charaId || j}_${mode}`}
+                    layout
+                    transition={{ type: "tween", duration: 0.15, ease: "easeInOut" }}
+                  >
+                    <CharaIcon
+                      ref={(el) => { if (i == 0) { firstPartyIconRefs.current[j] = el; } }}
+                      iconUrl={chara?.iconUrl || ""}
+                      element={chara?.element || "None"}
+                      bgcolor={chara?.bgcolor || "#222"}
+                      name={chara?.nameJP || ""}
+                      onMouseDown={(e: React.MouseEvent<HTMLDivElement>) => mouseStartMoveCharacter(e, i, charaId)}
+                      onTouchStart={(e: React.TouchEvent<HTMLDivElement>) => touchStartMoveCharacter(e, i, charaId)}
+                      style={{
+                        opacity: isMoving ? 0.3 : p.stg1 + p.stg2 + p.stg3 >= 9 ? 0.5 : 1,
+                        marginLeft: mode == "List" && j == 4 ? 20 : 0,
+                        zIndex: isMoving ? 0 : 1,
+                        cursor: mode == "List" ? "pointer" : "default",
+                      }}
+                    />
+                  </motion.div>
+                );
+              })}
+              {mode == "List" && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 5, marginLeft: 10 }}>
+                  <Stars count={p.stg1} setCount={(n: number) => setParty({ ...p, stg1: n }, i)} />
+                  <Stars count={p.stg2} setCount={(n: number) => setParty({ ...p, stg2: n }, i)} />
+                  <Stars count={p.stg3} setCount={(n: number) => setParty({ ...p, stg3: n }, i)} />
+                </div>
+              )}
+              {movingChara && movingCharaData && (
+                <CharaIcon
+                  iconUrl={movingCharaData.iconUrl}
+                  element={movingCharaData.element}
+                  bgcolor={movingCharaData.bgcolor}
+                  name={movingCharaData.nameJP}
+                  style={{
+                    position: "absolute",
+                    top: movingChara.mouseY - movingChara.topMouseDiff,
+                    left: movingChara.mouseX - movingChara.leftMouseDiff,
+                    zIndex: 2,
+                  }}
+                />
+              )}
+            </div>
+          ))}
+        </div>
+      )}
 
       {mode == "Roulette" && (
         <>
@@ -309,7 +319,7 @@ export default function Roulette() {
               disabled={isChoosing || charaList.length == 0}
               onClick={startRoulette}
             >
-              {charaList.length == 0 ? "読込中..." : rouletteFinished ? "結果一覧" : isLastParty ? "残りのメンバーを確定" : "抽選"}
+              {charaList.length == 0 && isPending ? "読込中..." : rouletteFinished ? "結果一覧" : isLastParty ? "残りのメンバーを確定" : "抽選"}
             </button>
           </div>
           <div style={{ display: "flex" }}>
@@ -347,6 +357,40 @@ export default function Roulette() {
                     if (!alreadySelected) addCharacters([chara.id]);
                   }}
                   style={{ cursor: alreadySelected ? "default" : "pointer" }}
+                />
+              );
+            })}
+          </div>
+        </>
+      )}
+      {mode == "CharaSelect" && (
+        <>
+          <div style={{ display: "flex", justifyContent: "center", margin: 30 }}>
+            <button
+              className={[styles.rouletteButton, charaList.length == 0 ? styles.disabled : ""].join(" ")}
+              disabled={charaList.length == 0}
+              onClick={fixCharaList}
+            >
+              {allCharaList.length == 0 && isPending ? "読込中..." : "使用キャラ決定"}
+            </button>
+          </div>
+          <div style={{ display: "flex", justifyContent: "center", flexWrap: "wrap", gap: 7, marginBottom: 150 }}>
+            {allCharaList.map((chara, i) => {
+              const alreadyInList = charaList.some(c => c.id == chara.id);
+              return (
+                <CharaIcon
+                  key={`chara_${i}`}
+                  iconUrl={chara.iconUrl}
+                  element={chara.element}
+                  bgcolor={chara.bgcolor}
+                  name={chara.nameJP}
+                  selected={chara.id == chosenCharaId}
+                  disabled={!alreadyInList}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (alreadyInList) setCharaList((prev) => prev.filter(c => c.id != chara.id));
+                    else setCharaList((prev) => [...prev, chara]);
+                  }}
                 />
               );
             })}
