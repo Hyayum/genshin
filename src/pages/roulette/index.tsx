@@ -374,13 +374,16 @@ export default function Roulette() {
           ⇐ルーレット
         </button>
       )}
-      <div style={{ backgroundColor: "#444", borderRadius: 10, padding: 10, width: "40%", minWidth: 500, marginTop: 20, marginBottom: 40 }}>
+      <div style={{ backgroundColor: "#444", borderRadius: 10, padding: 20, width: "40%", minWidth: 500, marginTop: 20, marginBottom: 40 }}>
         <div style={{ fontSize: 14 }}>▼今回使用するパーティー</div>
         {parties.map((p, i) => (
           <div key={`partyText_${i}`} style={{ fontSize: 14 }}>
             {i + 1}: {p.charaIds.map((id) => charaList.find((c) => c.id == id)?.nameJP).join("/")}
           </div>
         ))}
+        <div style={{ fontSize: 22, marginTop: 20 }}>
+          {`${parties.filter((p) => p.stg1 + p.stg2 + p.stg3 >= 9).length}/${parties.length}ｸﾘｱ(★${parties.reduce((acc, p) => acc + p.stg1 + p.stg2 + p.stg3, 0)}/${parties.length * 9})`}
+        </div>
       </div>
     </div>
   );
