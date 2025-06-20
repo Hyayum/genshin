@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useTransition } from "react";
 import { Star, StarOutline } from "@mui/icons-material";
 import { motion } from "framer-motion";
 import { Howl } from "howler";
@@ -29,6 +29,7 @@ const elementUrl = (elm: string) => (elm == "None" ? "" : `${PUBLIC_BASE_PATH}/$
 
 export default function Roulette() {
   const [charaList, setCharaList] = useState<Enka.CharacterData[]>([]);
+  const [isPending, startTransition] = useTransition();
   const [parties, setParties] = useState<Party[]>([{ charaIds: [], stg1: 0, stg2: 0, stg3: 0 }]);
   const [leftCharaIds, setLeftCharaIds] = useState<string[]>([]);
   const [mode, setMode] = useState<"Roulette" | "List">("Roulette");
@@ -42,7 +43,7 @@ export default function Roulette() {
   const rouletteSound = new Howl({ src: [`${PUBLIC_BASE_PATH}/roulette.mp3`]} );
   const rouletteEndSound = new Howl({ src: [`${PUBLIC_BASE_PATH}/roulette_end.mp3`]} );
 
-  const isLastParty = parties[parties.length - 1].charaIds.length >= 8 && leftCharaIds.length <= 8;
+  const isLastParty = parties[parties.length - 1].charaIds.length % 8 + leftCharaIds.length <= 8;
   const rouletteFinished = parties[parties.length - 1].charaIds.length >= 8 && parties.length * 8 >= charaList.length;
 
   const getCharaList = async () => {
@@ -57,7 +58,7 @@ export default function Roulette() {
   };
 
   useEffect(() => {
-    getCharaList();
+    startTransition(getCharaList);
     partyIconLeftXs.current = firstPartyIconRefs.current.map((icon) => {
       if (!icon) return 0;
       const rect = icon?.getBoundingClientRect();
@@ -98,7 +99,11 @@ export default function Roulette() {
       return;
     }
     if (isLastParty) {
-      addParty({ charaIds: leftCharaIds, stg1: 0, stg2: 0, stg3: 0 });
+      if (parties[parties.length - 1].charaIds.length < 8) {
+        setParty({ ...parties[parties.length - 1], charaIds: [...parties[parties.length - 1].charaIds, ...leftCharaIds] }, parties.length - 1);
+      } else {
+        addParty({ charaIds: leftCharaIds, stg1: 0, stg2: 0, stg3: 0 });
+      }
       setLeftCharaIds(charaList.filter((c) => !leftCharaIds.includes(c.id)).map((c) => c.id));
       return;
     }
@@ -173,23 +178,16 @@ export default function Roulette() {
     setParty({ ...parties[partyIdx], charaIds: changedCharaIds }, partyIdx);
   };
 
-  const startMoveCharacter = (e: React.MouseEvent<HTMLDivElement>, partyIdx: number, charaId: string) => {
-    e.stopPropagation();
-    e.preventDefault();
+  const startMoveCharacter = (partyIdx: number, charaId: string, target: HTMLDivElement, mouseX: number, mouseY: number) => {
     if (mode != "List" || !charaId) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const mouseX = e.pageX;
-    const mouseY = e.pageY;
+    const rect = target.getBoundingClientRect();
     const leftX = rect.left + window.scrollX;
     const topY = rect.top + window.scrollY;
     setMovingChara({ partyIdx, charaId, mouseX, mouseY, leftMouseDiff: mouseX - leftX, topMouseDiff: mouseY - topY });
   };
 
-  const moveCharacter = (e: React.MouseEvent<HTMLDivElement>) => {
+  const moveCharacter = (mouseX: number, mouseY: number) => {
     if (mode != "List" || !movingChara) return;
-    e.preventDefault();
-    const mouseX = e.pageX;
-    const mouseY = e.pageY;
     const leftX = mouseX - movingChara.leftMouseDiff;
     const currentCharaIdx = parties[movingChara.partyIdx].charaIds.findIndex((id) => movingChara.charaId == id);
     const nextCharaIdx = partyIconLeftXs.current.map((x) => Math.abs(x - leftX)).findIndex((diff, i, diffs) => Math.abs(Math.min(...diffs) - diff) == 0);
@@ -197,15 +195,48 @@ export default function Roulette() {
     setMovingChara((prev) => prev ? { ...prev, mouseX, mouseY } : null);
   };
 
-  const finishMoveCharacter = (e: React.MouseEvent<HTMLDivElement>) => {
+  const finishMoveCharacter = () => {
     if (mode != "List" || !movingChara) return;
     setMovingChara(null);
   };
 
+  const mouseStartMoveCharacter = (e: React.MouseEvent<HTMLDivElement>, partyIdx: number, charaId: string) => {
+    e.stopPropagation();
+    e.preventDefault();
+    const mouseX = e.pageX;
+    const mouseY = e.pageY;
+    const target = e.currentTarget;
+    startMoveCharacter(partyIdx, charaId, target, mouseX, mouseY);
+  };
+
+  const mouseMoveCharacter = (e: React.MouseEvent<HTMLDivElement>) => {
+    const mouseX = e.pageX;
+    const mouseY = e.pageY;
+    moveCharacter(mouseX, mouseY);
+  };
+
+  const touchStartMoveCharacter = (e: React.TouchEvent<HTMLDivElement>, partyIdx: number, charaId: string) => {
+    e.stopPropagation();
+    const touch = e.touches[0];
+    const x = touch.clientX;
+    const y = touch.clientY;
+    const target = e.currentTarget;
+    startMoveCharacter(partyIdx, charaId, target, x, y);
+  };
+
+  const touchMoveCharacter = (e: React.TouchEvent<HTMLDivElement>) => {
+    const touch = e.touches[0];
+    const x = touch.clientX;
+    const y = touch.clientY;
+    moveCharacter(x, y);
+  };
+
   return (
     <div
-      onMouseMove={moveCharacter}
+      onMouseMove={mouseMoveCharacter}
+      onTouchMove={touchMoveCharacter}
       onMouseUp={finishMoveCharacter}
+      onTouchEnd={finishMoveCharacter}
       style={{ backgroundColor: "#111", color: "#fff", padding: 40, width: "100%", minWidth: 1000, height: "100%", minHeight: "100vh" }}
     >
       <div style={{ fontSize: 30, textAlign: "center", marginBottom: 40 }}>
@@ -233,7 +264,8 @@ export default function Roulette() {
                     element={chara?.element || "None"}
                     bgcolor={chara?.bgcolor || "#222"}
                     name={chara?.nameJP || ""}
-                    onMouseDown={(e: React.MouseEvent<HTMLDivElement>) => startMoveCharacter(e, i, charaId)}
+                    onMouseDown={(e: React.MouseEvent<HTMLDivElement>) => mouseStartMoveCharacter(e, i, charaId)}
+                    onTouchStart={(e: React.TouchEvent<HTMLDivElement>) => touchStartMoveCharacter(e, i, charaId)}
                     style={{
                       opacity: isMoving ? 0.3 : p.stg1 + p.stg2 + p.stg3 >= 9 ? 0.5 : 1,
                       marginLeft: mode == "List" && j == 4 ? 20 : 0,
@@ -273,11 +305,11 @@ export default function Roulette() {
         <>
           <div style={{ display: "flex", justifyContent: "center", margin: 30 }}>
             <button
-              className={[styles.rouletteButton, isChoosing ? styles.disabled : ""].join(" ")}
-              disabled={isChoosing}
+              className={[styles.rouletteButton, isChoosing || charaList.length == 0 ? styles.disabled : ""].join(" ")}
+              disabled={isChoosing || charaList.length == 0}
               onClick={startRoulette}
             >
-              {rouletteFinished ? "結果一覧" : isLastParty ? "残りのメンバーを確定" : "抽選"}
+              {charaList.length == 0 ? "読込中..." : rouletteFinished ? "結果一覧" : isLastParty ? "残りのメンバーを確定" : "抽選"}
             </button>
           </div>
           <div style={{ display: "flex" }}>
@@ -361,6 +393,7 @@ const CharaIcon = ({
   name,
   onClick = (e) => {e.preventDefault()},
   onMouseDown = (e) => {e.preventDefault()},
+  onTouchStart = (e) => {e.preventDefault()},
   style = {},
   selected = false,
   disabled = false,
@@ -372,6 +405,7 @@ const CharaIcon = ({
   name: string;
   onClick?: React.MouseEventHandler<HTMLDivElement>;
   onMouseDown?: React.MouseEventHandler<HTMLDivElement>;
+  onTouchStart?: React.TouchEventHandler<HTMLDivElement>;
   style?: React.CSSProperties;
   selected?: boolean;
   disabled?: boolean;
@@ -386,9 +420,10 @@ const CharaIcon = ({
   return (
     <div
       ref={ref}
-      style={{ position: "relative", width: charaIconSize, height: charaIconSize, cursor: "pointer", ...style }}
+      style={{ position: "relative", width: charaIconSize, height: charaIconSize, cursor: "pointer", userSelect: "none", touchAction: "none", ...style }}
       onClick={onClick}
       onMouseDown={onMouseDown}
+      onTouchStart={onTouchStart}
     >
       <div style={{ ...mainStyle, backgroundColor: bgcolor }} />
       {iconUrl && (
