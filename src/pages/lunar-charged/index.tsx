@@ -188,7 +188,9 @@ export default function LunarCharged() {
         <Typography variant="body2" sx={{ whiteSpace: "pre-wrap", color: "#666" }}>
           ※Lv.固有値：Lv.90で1447 <a href="https://genshin-impact.fandom.com/wiki/Elemental_Reaction/Level_Scaling#Level_Multiplier" target="_blank" rel="noopener noreferrer" style={{ color: "#284" }}>⇒詳細(Fandom)</a>{"\n"}
           ※月感電基礎値バフ：イネファ固有天賦(最大14%){"\n"}
-          ※月感電バフ：砕け散る光輪(精錬1: 40%)・イファ固有天賦(最大40%)・モナ1凸(15%)・雷のような怒り4セット(20%)
+          ※月感電バフ：砕け散る光輪(精錬1: 40%)・イファ固有天賦(最大40%)・モナ1凸(15%)・雷のような怒り4セット(20%){"\n"}
+          ※個別期待値：キャラごとに計算する個別の月感電ダメージの期待値{"\n"}
+          ※貢献度期待値：実際の月感電ダメージに貢献するダメージ量の期待値{"\n"}
         </Typography>
       </Grid>
     </Grid>
