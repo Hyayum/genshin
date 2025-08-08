@@ -172,8 +172,8 @@ export default function LunarCharged() {
           { label: "期待値", value: Math.round(finalDmg.exp) },
           { label: "最大値", value: Math.round(finalDmg.max) },
           { label: "最小値", value: Math.round(finalDmg.min) },
-        ].map(({ label, value }) => (
-          <Box sx={{ display: "flex", gap: 2 }}>
+        ].map(({ label, value }, i) => (
+          <Box sx={{ display: "flex", gap: 2 }} key={i}>
             <Typography variant="h6" sx={{ color: "#444", width: 80 }}>
               {label}
             </Typography>
