@@ -34,6 +34,7 @@ export const getCharacterList = async () => {
     fetch(jpNameMapUrl).then(res => res.json() as Promise<Record<string, string>>),
   ]);
   const charaData = Object.entries(charaList).reduce((acc, [id, data]) => {
+    if (!data.SideIconName) return acc;
     const nameEnka = data.SideIconName.match(/^UI_AvatarIcon_Side_(.+)$/)?.[1] || "";
     return {
       ...acc,
