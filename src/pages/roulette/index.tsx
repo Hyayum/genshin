@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useTransition } from "react";
+import Head from "next/head"
 import { Star, StarOutline } from "@mui/icons-material";
 import { motion } from "framer-motion";
 import { Howl } from "howler";
@@ -298,6 +299,10 @@ export default function Roulette() {
       onTouchEnd={finishMoveCharacter}
       style={{ backgroundColor: "#111", color: "#fff", padding: 40, width: "100%", minWidth: 1000, height: "100%", minHeight: "100vh" }}
     >
+      <Head>
+        <title>ルーレット螺旋（ジェネリック）</title>
+        <meta property="og:title" content="ルーレット螺旋（ジェネリック）"></meta>
+      </Head>
       <div style={{ fontSize: 30, textAlign: "center", marginBottom: 40 }}>
         ルーレット螺旋（ジェネリック）
       </div>
