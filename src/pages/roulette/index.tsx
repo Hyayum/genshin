@@ -42,6 +42,7 @@ export default function Roulette() {
   const partyIconLeftXs = useRef<number[]>(Array(8).fill(0));
 
   const rouletteSound = new Howl({ src: [`${PUBLIC_BASE_PATH}/roulette.mp3`]} );
+  const rouletteSoundLoop = new Howl({ src: [`${PUBLIC_BASE_PATH}/roulette_loop.mp3`], loop: true });
   const rouletteEndSound = new Howl({ src: [`${PUBLIC_BASE_PATH}/roulette_end.mp3`]} );
 
   const isLastParty = parties[parties.length - 1].charaIds.length % 8 + leftCharaIds.length <= 8;
@@ -73,12 +74,14 @@ export default function Roulette() {
       const leftX = rect.left + window.screenX;
       return leftX;
     });
-    console.log("partyIconLeftXs", partyIconLeftXs.current);
-    console.log("firstPartyIconRefs", firstPartyIconRefs.current);
   }, [mode]);
 
   const playRouletteSound = () => {
     rouletteSound.play();
+  };
+
+  const playRouletteSoundLoop = () => {
+    rouletteSoundLoop.play();
   };
 
   const playRouletteEndSound = () => {
@@ -138,6 +141,7 @@ export default function Roulette() {
     let lastChangedInterval = 0;
     let lastSoundPlayed: number | null = null;
     let isHighSpeedSound = true;
+    let isHighSpeedSoundPlaying = false;
     let frameId: number | null = null;
     let currentSpeed = initSpeed;
     let currentPosition = startIdx;
@@ -162,8 +166,15 @@ export default function Roulette() {
         }
         if (!isEnd && !isHighSpeedSound) playRouletteSound();
       }
+      if (!isHighSpeedSound && isHighSpeedSoundPlaying) {
+        rouletteSoundLoop.stop();
+        isHighSpeedSoundPlaying = false;
+      }
       if (playHighSpeed && isHighSpeedSound) {
-        playRouletteSound();
+        if (!isHighSpeedSoundPlaying) {
+          playRouletteSoundLoop();
+          isHighSpeedSoundPlaying = true;
+        }
         lastSoundPlayed = now;
       }
       if (isEnd && frameId !== null) {
