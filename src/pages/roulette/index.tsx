@@ -416,7 +416,7 @@ export default function Roulette() {
       )}
       {mode == "CharaSelect" && (
         <>
-          <div style={{ display: "flex", justifyContent: "center", margin: 30 }}>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 5, margin: 30 }}>
             <button
               className={[styles.rouletteButton, charaList.length == 0 ? styles.disabled : ""].join(" ")}
               disabled={charaList.length == 0}
@@ -424,6 +424,7 @@ export default function Roulette() {
             >
               {allCharaList.length == 0 && isPending ? "読込中..." : "使用キャラ決定"}
             </button>
+            <div style={{ fontSize: 14 }}>未所持キャラなどを除外できます</div>
           </div>
           <div style={{ display: "flex", justifyContent: "center", flexWrap: "wrap", gap: 7, marginBottom: 150 }}>
             {allCharaList.map((chara, i) => {
