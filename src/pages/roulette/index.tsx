@@ -66,14 +66,16 @@ export default function Roulette() {
   };
 
   useEffect(() => {
-    startTransition(getCharaList);
+    if (allCharaList.length == 0) startTransition(getCharaList);
     partyIconLeftXs.current = firstPartyIconRefs.current.map((icon) => {
       if (!icon) return 0;
       const rect = icon?.getBoundingClientRect();
       const leftX = rect.left + window.screenX;
       return leftX;
     });
-  }, []);
+    console.log("partyIconLeftXs", partyIconLeftXs.current);
+    console.log("firstPartyIconRefs", firstPartyIconRefs.current);
+  }, [mode]);
 
   const playRouletteSound = () => {
     rouletteSound.play();
