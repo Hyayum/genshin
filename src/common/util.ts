@@ -5,3 +5,7 @@ export const shuffle = <T>(arr: T[]) => {
   }
   return arr;
 };
+
+export const generateCacheBustQueryString = () => {
+  return `cb=${Date.now()}`;
+};

@@ -1,4 +1,5 @@
 import { charaListUrl, jpNameMapUrl } from "@/enka/settings";
+import { generateCacheBustQueryString } from "@/common/util";
 
 export type Element = "Fire" | "Water" | "Wind" | "Electric" | "Grass" | "Ice" | "Rock" | "None";
 
@@ -30,12 +31,12 @@ export const RarityColor = {
 
 export const getCharacterList = async () => {
   const [charaList, jpNameMap] = await Promise.all([
-    fetch(charaListUrl).then(res => res.json() as Promise<Record<string, EnkaCharacterData>>),
-    fetch(jpNameMapUrl).then(res => res.json() as Promise<Record<string, string>>),
+    fetch(`${charaListUrl}?${generateCacheBustQueryString()}`).then(res => res.json() as Promise<Record<string, EnkaCharacterData>>),
+    fetch(`${jpNameMapUrl}?${generateCacheBustQueryString()}`).then(res => res.json() as Promise<Record<string, string>>),
   ]);
   const charaData = Object.entries(charaList).reduce((acc, [id, data]) => {
     if (!data.SideIconName) return acc;
-    const nameEnka = data.SideIconName.match(/^UI_AvatarIcon_Side_(.+)$/)?.[1] || "";
+    const nameEnka = data.SideIconName.match(/^\/ui\/UI_AvatarIcon_Side_(.+)\.png$/)?.[1] || "";
     return {
       ...acc,
       [id]: {
