@@ -41,9 +41,19 @@ export default function Roulette() {
   const firstPartyIconRefs = useRef<(HTMLDivElement | null)[]>(Array(8).fill(null));
   const partyIconLeftXs = useRef<number[]>(Array(8).fill(0));
 
-  const rouletteSound = new Howl({ src: [`${PUBLIC_BASE_PATH}/roulette.mp3`]} );
-  const rouletteSoundLoop = new Howl({ src: [`${PUBLIC_BASE_PATH}/roulette_loop.mp3`], loop: true });
-  const rouletteEndSound = new Howl({ src: [`${PUBLIC_BASE_PATH}/roulette_end.mp3`]} );
+  const [rouletteSound, setRouletteSound] = useState<Howl | null>(null);
+  const [rouletteSoundLoop, setRouletteSoundLoop] = useState<Howl | null>(null);
+  const [rouletteEndSound, setRouletteEndSound] = useState<Howl | null>(null);
+  const [soundReloadFlag, setSoundReloadFlag] = useState(0);
+  const rouletteSoundIdRef = useRef<number | null>(null);
+  const rouletteSoundLoopIdRef = useRef<number | null>(null);
+  const rouletteEndSoundIdRef = useRef<number | null>(null);
+  useEffect(() => {
+    setRouletteSound(new Howl({ src: [`${PUBLIC_BASE_PATH}/roulette.mp3`], pool: 4 } ));
+    setRouletteSoundLoop(new Howl({ src: [`${PUBLIC_BASE_PATH}/roulette_loop.mp3`], loop: true, pool: 1 }));
+    setRouletteEndSound(new Howl({ src: [`${PUBLIC_BASE_PATH}/roulette_end.mp3`], pool: 1 }));
+  }, [soundReloadFlag]);
+
 
   const isLastParty = parties[parties.length - 1].charaIds.length % 8 + leftCharaIds.length <= 8;
   const rouletteFinished = (parties[parties.length - 1].charaIds.length >= 8 && parties.length * 8 >= charaList.length) ||
@@ -77,15 +87,21 @@ export default function Roulette() {
   }, [mode]);
 
   const playRouletteSound = () => {
-    rouletteSound.play();
+    const id = rouletteSoundIdRef.current;
+    if (id !== null && rouletteSound && rouletteSound.playing(id)) rouletteSound.stop(id);
+    if (rouletteSound) rouletteSoundIdRef.current = rouletteSound.play();
   };
 
   const playRouletteSoundLoop = () => {
-    rouletteSoundLoop.play();
+    const id = rouletteSoundLoopIdRef.current;
+    if (id !== null && rouletteSoundLoop && rouletteSoundLoop.playing(id)) rouletteSoundLoop.stop(id);
+    if (rouletteSoundLoop) rouletteSoundLoopIdRef.current = rouletteSoundLoop.play();
   };
 
   const playRouletteEndSound = () => {
-    rouletteEndSound.play();
+    const id = rouletteEndSoundIdRef.current;
+    if (id !== null && rouletteEndSound && rouletteEndSound.playing(id)) rouletteEndSound.stop(id);
+    if (rouletteEndSound) rouletteEndSoundIdRef.current = rouletteEndSound.play();
   };
 
   const setParty = (party: Party, i: number) => {
@@ -134,18 +150,20 @@ export default function Roulette() {
     const baseDistance = 60 ** 2 / (2 * accl); // s = v^2 / 2a
     const distance = leftCharaIndices.length * Math.round((baseDistance - (targetIdx - startIdx)) / leftCharaIndices.length) + targetIdx - startIdx;
     const initSpeed = Math.sqrt(2 * accl * distance) // v^2 = 2as
-    const minSoundIntervalSec = 1 / 21;
+    const maxSoundSpeed = 18;  // mp3
+    const soundSlowSpeed = 10;
 
     let last = performance.now();
     let lastChanged = performance.now();
     let lastChangedInterval = 0;
-    let lastSoundPlayed: number | null = null;
     let isHighSpeedSound = true;
     let isHighSpeedSoundPlaying = false;
     let frameId: number | null = null;
     let currentSpeed = initSpeed;
     let currentPosition = startIdx;
     let currentDecimal = 0;
+    let highSpeedSoundStartedAt = 0;
+    let highSpeedSoundLastPlayedAt = 0;
     const loop = (now: number) => {
       const time = Math.max(now - last, 0) / 1000;
       last = now;
@@ -156,32 +174,52 @@ export default function Roulette() {
       const nextPosition = isEnd ? leftCharaIndices[(leftCharaIndices.findIndex((idx) => idx == currentPosition) + 1) % leftCharaIndices.length] :
         leftCharaIndices[Math.max(Math.floor((leftCharaIndices.findIndex((idx) => idx == currentPosition) + currentDecimal + dist) % leftCharaIndices.length), 0)];
 
-      const playHighSpeed = currentSpeed >= 1 / minSoundIntervalSec - 2 && (lastSoundPlayed === null || now - lastSoundPlayed > minSoundIntervalSec * 1000);
       if (currentPosition != nextPosition) {
         setChosenCharaId(charaList[nextPosition].id);
         lastChangedInterval = now - lastChanged;
         lastChanged = now;
-        if (isHighSpeedSound && currentSpeed < 1 / minSoundIntervalSec - 2 && lastSoundPlayed && now - lastSoundPlayed > minSoundIntervalSec * 1000) {
+        if (isHighSpeedSound && currentSpeed < soundSlowSpeed) {
           isHighSpeedSound = false;
+          if (isHighSpeedSoundPlaying) {
+            // switch to slow mode
+            const playedDuration = performance.now() - highSpeedSoundStartedAt;
+            const timeFromLastSound = playedDuration % (1000 / maxSoundSpeed)
+            highSpeedSoundLastPlayedAt = playedDuration - timeFromLastSound + highSpeedSoundStartedAt;
+            if (rouletteSoundLoopIdRef.current !== null && rouletteSoundLoop) {
+              rouletteSoundLoop.fade(1.0, 0.0, 50, rouletteSoundLoopIdRef.current);
+              setTimeout(() => {
+                rouletteSoundLoopIdRef.current !== null && rouletteSoundLoop.stop(rouletteSoundLoopIdRef.current);
+              }, 60);
+            }
+            isHighSpeedSoundPlaying = false;
+          }
         }
-        if (!isEnd && !isHighSpeedSound) playRouletteSound();
       }
-      if (!isHighSpeedSound && isHighSpeedSoundPlaying) {
-        rouletteSoundLoop.stop();
-        isHighSpeedSoundPlaying = false;
+      if (currentPosition != nextPosition && !isEnd && !isHighSpeedSound && performance.now() - highSpeedSoundLastPlayedAt >= 1000 / (maxSoundSpeed + 10)) {
+        playRouletteSound();
       }
-      if (playHighSpeed && isHighSpeedSound) {
+      if (isHighSpeedSound) {
         if (!isHighSpeedSoundPlaying) {
           playRouletteSoundLoop();
           isHighSpeedSoundPlaying = true;
+          highSpeedSoundStartedAt = performance.now();
         }
-        lastSoundPlayed = now;
       }
       if (isEnd && frameId !== null) {
         cancelAnimationFrame(frameId);
         addCharacters([charaList[nextPosition].id]);
-        setIsChoosing(false);
         playRouletteEndSound();
+        setTimeout(() => {
+          Howler.stop();
+          Howler.unload();
+          Howler.ctx.close().then(() => {
+            Howler.ctx = new AudioContext();
+            Howler.masterGain = Howler.ctx.createGain();
+            Howler.masterGain.connect(Howler.ctx.destination);
+          });
+          setSoundReloadFlag((prev) => prev + 1);
+          setIsChoosing(false);
+        }, 500);
         return;
       }
       currentPosition = nextPosition;
