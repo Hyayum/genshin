@@ -35,6 +35,7 @@ export default function Roulette() {
   const [parties, setParties] = useState<Party[]>([{ charaIds: [], stg1: 0, stg2: 0, stg3: 0 }]);
   const [leftCharaIds, setLeftCharaIds] = useState<string[]>([]);
   const [mode, setMode] = useState<"Roulette" | "List" | "CharaSelect">("CharaSelect");
+  const [quickRoulette, setQuickRoulette] = useState(false);
   const [isChoosing, setIsChoosing] = useState(false);
   const [chosenCharaId, setChosenCharaId] = useState<string | null>(null);
   const [movingChara, setMovingChara] = useState<MovingChara | null>(null);
@@ -138,7 +139,6 @@ export default function Roulette() {
       return;
     }
     if (!leftCharaIds.length) return;
-    setIsChoosing(true);
     const currentIdx = charaList.findIndex((c) => c.id == chosenCharaId);
     const leftCharaIndices = charaList.map((c, i) => ({ ...c, idx: i })).filter((c) => leftCharaIds.includes(c.id)).map((c) => c.idx);
     const startIdxCandidates = leftCharaIndices.filter((idx) => currentIdx < idx );
@@ -146,7 +146,14 @@ export default function Roulette() {
     const targetIdx = leftCharaIndices[Math.floor(Math.random() * leftCharaIndices.length)];  // だいたいの目標
     // console.log("start", startIdx, charaList[startIdx].nameJP)
     // console.log("target", targetIdx, charaList[targetIdx].nameJP);
+    if (quickRoulette) {
+      const targetCharaId = charaList[targetIdx].id;
+      addCharacters([targetCharaId]);
+      setChosenCharaId(targetCharaId);
+      return;
+    }
 
+    setIsChoosing(true);
     const accl = 13;
     const baseDistance = 60 ** 2 / (2 * accl); // s = v^2 / 2a
     const distance = leftCharaIndices.length * Math.round((baseDistance - (targetIdx - startIdx)) / leftCharaIndices.length) + targetIdx - startIdx;
@@ -369,7 +376,7 @@ export default function Roulette() {
 
       {mode == "Roulette" && (
         <>
-          <div style={{ display: "flex", justifyContent: "center", margin: 30 }}>
+          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", margin: 30, gap: 20 }}>
             <button
               className={[styles.rouletteButton, isChoosing || charaList.length == 0 ? styles.disabled : ""].join(" ")}
               disabled={isChoosing || charaList.length == 0}
@@ -377,6 +384,7 @@ export default function Roulette() {
             >
               {charaList.length == 0 && isPending ? "読込中..." : rouletteFinished ? "結果一覧" : isLastParty ? "残りのメンバーを確定" : "抽選"}
             </button>
+            <label><input type="checkbox" checked={quickRoulette} onClick={() => setQuickRoulette(prev => !prev)}/>クイックルーレット</label>
           </div>
           <div style={{ display: "flex" }}>
             <div style={{ display: "flex", marginLeft: "auto", alignItems: "center", gap: 15, marginBottom: 10, marginRight: 20 }}>
@@ -410,6 +418,7 @@ export default function Roulette() {
                   disabled={alreadySelected}
                   onClick={(e) => {
                     e.preventDefault();
+                    if (isChoosing) return;
                     if (!alreadySelected) addCharacters([chara.id]);
                   }}
                   style={{ cursor: alreadySelected ? "default" : "pointer" }}
