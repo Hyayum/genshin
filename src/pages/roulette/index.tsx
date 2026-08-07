@@ -495,6 +495,7 @@ export default function Roulette() {
           {`${parties.filter((p) => p.stg1 + p.stg2 + p.stg3 >= 9).length}/${parties.length}ｸﾘｱ(★${parties.reduce((acc, p) => acc + p.stg1 + p.stg2 + p.stg3, 0)}/${parties.length * 9})`}
         </div>
       </div>
+      <div>※動画や配信などご自由にお使いください</div>
     </div>
   );
 }
