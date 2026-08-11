@@ -496,6 +496,11 @@ export default function Roulette() {
         </div>
       </div>
       <div>※動画や配信などご自由にお使いください</div>
+      <ul style={{ fontSize: 12, marginTop: 20 }}>
+        <li>進捗の保存機能はないためリロードするとリセットされます。ご注意ください。</li>
+        <li>キャラ一覧や画像はEnka.Networkのものを使用しています。取得元のデータに予期しない変更があると壊れる可能性があります。何かおかしければ<a href="https://x.com/koyoniri" target="_blank" rel="noopener noreferrer" style={{ textDecoration: "underline" }}>@koyoniri</a>までお知らせください。</li>
+        <li>キャラの日本語名のみ元データがクソデカなため手動で更新しています。新キャラの名前が日本語以外で表示されている場合は作者が更新をサボっているだけです。</li>
+      </ul>
     </div>
   );
 }
