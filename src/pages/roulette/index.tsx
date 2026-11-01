@@ -68,7 +68,7 @@ export default function Roulette() {
       ((!Number.isNaN(Number(c.id)) && Number(c.id) < 10000900) || c.id == travelerId) &&
       c.id != "10000005" && c.id != "10000007"
     )).map((c) => c.id == travelerId ? { ...c, iconUrl: `${PUBLIC_BASE_PATH}/traveler.png` } : c);
-    setAllCharaList(charasForRoulette.sort((a, b) => a.id.localeCompare(b.id)));
+    setAllCharaList(charasForRoulette.sort((a, b) => a.sort - b.sort));
     setCharaList(charasForRoulette);
   };
 
@@ -439,6 +439,7 @@ export default function Roulette() {
               {allCharaList.length == 0 && isPending ? "読込中..." : "使用キャラ決定"}
             </button>
             <div style={{ fontSize: 14 }}>未所持キャラなどを除外できます</div>
+            <div style={{ fontSize: 18 }}>選択中：{charaList.length}キャラ　{Math.ceil(charaList.length / 8)}組　内{Math.ceil(charaList.length / 8) * 8 - charaList.length}キャラ再抽選</div>
           </div>
           <div style={{ display: "flex", justifyContent: "center", flexWrap: "wrap", gap: 7, marginBottom: 150 }}>
             {allCharaList.map((chara, i) => {

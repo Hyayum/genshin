@@ -17,6 +17,7 @@ export interface CharacterData {
   nameJP: string;
   element: Element;
   rarity: number;
+  sort: number;
 };
 
 export interface CharacterList {
@@ -34,6 +35,7 @@ export const getCharacterList = async () => {
     fetch(`${charaListUrl}?${generateCacheBustQueryString()}`).then(res => res.json() as Promise<Record<string, EnkaCharacterData>>),
     fetch(`${jpNameMapUrl}?${generateCacheBustQueryString()}`).then(res => res.json() as Promise<Record<string, string>>),
   ]);
+  const sortedNameList = Object.entries(jpNameMap).map(([nameEnka, nameJP]) => nameEnka);
   const charaData = Object.entries(charaList).reduce((acc, [id, data]) => {
     if (!data.SideIconName) return acc;
     const nameEnka = data.SideIconName.match(/^\/ui\/UI_AvatarIcon_Side_(.+)\.png$/)?.[1] || "";
@@ -47,6 +49,7 @@ export const getCharacterList = async () => {
         nameJP: jpNameMap[nameEnka] || nameEnka,
         element: data.Element,
         rarity: data.QualityType == "QUALITY_PURPLE" ? 4 : 5,
+        sort: sortedNameList.indexOf(nameEnka),
       },
     }
   }, {} as Record<string, CharacterData>);
